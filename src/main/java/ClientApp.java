@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.sql.*;
 import java.util.Properties;
 
@@ -33,7 +34,8 @@ public class ClientApp extends JPanel
 
     Properties userProperties = new Properties();
     Properties dbProperties = new Properties();
-    FileInputStream filein = null;
+    FileInputStream dbFileIn = null;
+    FileInputStream userFileIn = null;
     MysqlDataSource dataSource = null;
 
 
@@ -275,8 +277,35 @@ public class ClientApp extends JPanel
                         connect.close();
                         connectionLabel.setText("No Connection Now");
                     }
-                    filein = new FileInputStream("/home/christopheralbear/Projects/enterprise-proj-2/src/main/java/" + dbPropertiesComboBox.getSelectedItem().toString());
-                } catch (SQLException | FileNotFoundException e) {
+                    dbFileIn = new FileInputStream("/home/christopheralbear/Projects/enterprise-proj-2/src/main/java/" + dbPropertiesComboBox.getSelectedItem().toString());
+                    userFileIn = new FileInputStream("/home/christopheralbear/Projects/enterprise-proj-2/src/main/java/" + userPropertiesComboBox.getSelectedItem().toString());
+
+                    dbProperties.load(dbFileIn);
+                    userProperties.load(userFileIn);
+
+                    dataSource = new MysqlDataSource();
+                    dataSource.setURL(dbProperties.getProperty("MYSQL_DB_URL"));
+                    dataSource.setUser(userProperties.getProperty("MYSQL_DB_USERNAME"));
+                    dataSource.setPassword(userProperties.getProperty("MYSQL_DB_PASSWORD"));
+
+                    // compare the properties file info to the user and pass input on gui
+                    String userName = usernameText.getText();
+                    String password = String.valueOf(passwordText.getPassword());
+
+                    if (!userName.equals(dataSource.getUser()))
+                    {
+                        throw new MatchException("No Match on User Name", null);
+                    }
+
+                    if (!password.equals(dataSource.getPassword()))
+                    {
+                        throw new MatchException("No Match on Password", null);
+                    }
+
+                    connect = dataSource.getConnection();
+                    connectionLabel.setText(dataSource.getURL());
+
+                } catch (SQLException | IOException e) {
                     throw new RuntimeException(e);
                 }
             }
