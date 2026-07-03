@@ -3,11 +3,15 @@
 import javax.swing.*;
 import javax.swing.table.*;
 
-import com.mysql.cj.jdbc.MySqlDataSource;
+import com.mysql.cj.jdbc.MysqlDataSource;
+import com.mysql.cj.result.Field;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.sql.*;
+import java.util.Properties;
 
 @SuppressWarnings({"serial", "rawtypes"})
 
@@ -26,6 +30,12 @@ public class ClientApp extends JPanel
     private JTable resultTable;
 
     private JSeparator lineOne, lineTwo;
+
+    Properties userProperties = new Properties();
+    Properties dbProperties = new Properties();
+    FileInputStream filein = null;
+    MysqlDataSource dataSource = null;
+
 
     public ClientApp()
     {
@@ -257,7 +267,18 @@ public class ClientApp extends JPanel
         connectButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-
+                // if no connection, make connection
+                // update label
+                // read properties file dictated by combobox
+                try{
+                    if (connect != null) {
+                        connect.close();
+                        connectionLabel.setText("No Connection Now");
+                    }
+                    filein = new FileInputStream("/home/christopheralbear/Projects/enterprise-proj-2/src/main/java/" + dbPropertiesComboBox.getSelectedItem().toString());
+                } catch (SQLException | FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
 
@@ -273,7 +294,7 @@ public class ClientApp extends JPanel
         clearCommandButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-
+                textCommand.setText("");
             }
         });
 
