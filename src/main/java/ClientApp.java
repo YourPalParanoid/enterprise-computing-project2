@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.Properties;
 
+
 @SuppressWarnings({"serial", "rawtypes"})
 
 public class ClientApp extends JPanel
@@ -26,7 +27,8 @@ public class ClientApp extends JPanel
     private JPasswordField passwordText;
     private JLabel connectionStatusLabel, connectionLabel, resultWindowLabel;
     // private ResultSetTableModel tableModel;
-    private Connection connect;
+    public static Connection connect;
+    private ResultSetTableModel tableModel;
     private TableModel Empty;
     private JTable resultTable;
 
@@ -38,9 +40,10 @@ public class ClientApp extends JPanel
     FileInputStream userFileIn = null;
     MysqlDataSource dataSource = null;
 
+    private PreparedStatement preparedStatement;
 
-    public ClientApp()
-    {
+
+    public ClientApp() throws SQLException, ClassNotFoundException {
         // dropdown menus
         String[] dbPropertiesItems = {"project2.properties", "bikedb.properties"};
         String[] userPropertiesItems = {"root.properties", "client1.properties", "client2.properties"};
@@ -176,8 +179,11 @@ public class ClientApp extends JPanel
         passwordText = new JPasswordField("", 10);
 
 
+        // Statement statement = connect.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY );
+        // tableModel = new ResultSetTableModel("");
         resultTable = new JTable();
         Empty = new DefaultTableModel();
+
 
 
 
@@ -315,7 +321,17 @@ public class ClientApp extends JPanel
         disconnectButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-
+                try {
+                    connect.close();
+                    connectionLabel.setText("NO CONNECTION ESTABLISHED");
+                    textCommand.setText("");
+                    for( int i = 0; i < resultTable.getRowCount(); i++)
+                    {
+                        ((DefaultTableModel)resultTable.getModel()).removeRow(i);
+                    }
+                }catch (SQLException e) {
+                    JOptionPane.showMessageDialog(null, e.getMessage(), "Database error", 30);
+                }
             }
         });
 
@@ -331,7 +347,19 @@ public class ClientApp extends JPanel
         executeCommandButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
+                // create statement
+                try {
+                    // Statement statement = connect.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY );
 
+                    tableModel = new ResultSetTableModel(textCommand.getText());
+                    resultTable.setModel(tableModel);
+                    resultTable.setEnabled(true);
+                    // execute query
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
 
@@ -339,7 +367,7 @@ public class ClientApp extends JPanel
         clearResultWindowButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-
+                resultTable.setEnabled(false);
             }
         });
 
@@ -352,7 +380,7 @@ public class ClientApp extends JPanel
         });
     }
 
-    public static void main() {
+    public static void main() throws SQLException, ClassNotFoundException {
         JFrame frame = new JFrame("SQL Client Application");
         frame.setPreferredSize (new Dimension (900, 980));
 

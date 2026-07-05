@@ -1,14 +1,11 @@
 // A TableModel that supplies ResultSet data to a JTable.
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.Statement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
 import javax.swing.table.AbstractTableModel;
 import java.util.Properties;
-// import com.mysql.cj.jdbc.MysqlDataSource;
+import com.mysql.cj.jdbc.MysqlDataSource;
+import com.mysql.cj.x.protobuf.MysqlxPrepare;
 
 
 // ResultSet rows and columns are counted from 1 and JTable 
@@ -20,25 +17,26 @@ import java.util.Properties;
 public class ResultSetTableModel extends AbstractTableModel 
 {
    private Statement statement;
+   private PreparedStatement preparedStatement;
    private ResultSet resultSet;
    private ResultSetMetaData metaData;
    private int numberOfRows;
 
    // keep track of database connection status
-   private boolean connectedToDatabase = false;
+   // private boolean connectedToDatabase = false;
    
    // constructor initializes resultSet and obtains its meta data object;
    // determines number of rows
    public ResultSetTableModel( String query ) 
       throws SQLException, ClassNotFoundException
    {         
-	   Properties properties = new Properties();
-	   FileInputStream filein = null;
+	   // Properties properties = new Properties();
+	   // FileInputStream filein = null;
 	   // MysqlDataSource dataSource = null;
        //read properties file
 	   try {
-	    	filein = new FileInputStream("db.properties");
-	    	properties.load(filein);
+	    	// filein = new FileInputStream("db.properties");
+	    	// properties.load(filein);
 	    	// dataSource = new MysqlDataSource();
 	    	// dataSource.setURL(properties.getProperty("MYSQL_DB_URL"));
 	    	// dataSource.setUser(properties.getProperty("MYSQL_DB_USERNAME"));
@@ -49,10 +47,10 @@ public class ResultSetTableModel extends AbstractTableModel
    	        // Connection connection = dataSource.getConnection();
 	
             // create Statement to query database
-            // statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY );
+            preparedStatement = ClientApp.connect.prepareStatement( query );
 
             // update database connection status
-            connectedToDatabase = true;
+            // connectedToDatabase = true;
 
             // set query and execute it
             setQuery( query );
@@ -65,18 +63,13 @@ public class ResultSetTableModel extends AbstractTableModel
          sqlException.printStackTrace();
          System.exit( 1 );
       } // end catch
-      catch (IOException e) {
-   	     e.printStackTrace();
-      }  
+
    } // end constructor ResultSetTableModel
 
    // get class that represents column type
    public Class getColumnClass( int column ) throws IllegalStateException
    {
       // ensure database connection is available
-      if ( !connectedToDatabase ) 
-         throw new IllegalStateException( "Not Connected to Database" );
-
       // determine Java class of column
       try 
       {
@@ -97,9 +90,6 @@ public class ResultSetTableModel extends AbstractTableModel
    public int getColumnCount() throws IllegalStateException
    {   
       // ensure database connection is available
-      if ( !connectedToDatabase ) 
-         throw new IllegalStateException( "Not Connected to Database" );
-
       // determine number of columns
       try 
       {
@@ -117,8 +107,6 @@ public class ResultSetTableModel extends AbstractTableModel
    public String getColumnName( int column ) throws IllegalStateException
    {    
       // ensure database connection is available
-      if ( !connectedToDatabase ) 
-         throw new IllegalStateException( "Not Connected to Database" );
 
       // determine column name
       try 
@@ -137,9 +125,7 @@ public class ResultSetTableModel extends AbstractTableModel
    public int getRowCount() throws IllegalStateException
    {      
       // ensure database connection is available
-      if ( !connectedToDatabase ) 
-         throw new IllegalStateException( "Not Connected to Database" );
- 
+
       return numberOfRows;
    } // end method getRowCount
 
@@ -148,8 +134,6 @@ public class ResultSetTableModel extends AbstractTableModel
       throws IllegalStateException
    {
       // ensure database connection is available
-      if ( !connectedToDatabase ) 
-         throw new IllegalStateException( "Not Connected to Database" );
 
       // obtain a value at specified ResultSet row and column
       try 
@@ -167,15 +151,13 @@ public class ResultSetTableModel extends AbstractTableModel
    } // end method getValueAt
    
    // set new database query string
-   public void setQuery( String query ) 
+   public void setQuery( String query )
       throws SQLException, IllegalStateException 
    {
       // ensure database connection is available
-      if ( !connectedToDatabase ) 
-         throw new IllegalStateException( "Not Connected to Database" );
 
       // specify query and execute it
-      resultSet = statement.executeQuery( query );
+      resultSet = preparedStatement.executeQuery( query );
 
       // obtain meta data for ResultSet
       metaData = resultSet.getMetaData();
@@ -195,11 +177,9 @@ public class ResultSetTableModel extends AbstractTableModel
    {
 	  int res;
       // ensure database connection is available
-      if ( !connectedToDatabase ) 
-         throw new IllegalStateException( "Not Connected to Database" );
 
       // specify query and execute it
-      res = statement.executeUpdate( query );
+      res = preparedStatement.executeUpdate( query );
 /*
       // obtain meta data for ResultSet
       metaData = resultSet.getMetaData();
@@ -214,10 +194,8 @@ public class ResultSetTableModel extends AbstractTableModel
    // close Statement and Connection               
    public void disconnectFromDatabase()            
    {              
-      if ( !connectedToDatabase )                  
-         return;
-      // close Statement and Connection            
-      else try                                          
+
+      try
       {                                            
          statement.close();                        
          // connection.close();
@@ -226,10 +204,7 @@ public class ResultSetTableModel extends AbstractTableModel
       {                                            
          sqlException.printStackTrace();           
       } // end catch                               
-      finally  // update database connection status
-      {                                            
-         connectedToDatabase = false;              
-      } // end finally                             
+
    } // end method disconnectFromDatabase          
 }  // end class ResultSetTableModel
 
